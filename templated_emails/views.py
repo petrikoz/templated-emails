@@ -1,12 +1,10 @@
 import logging
 
-from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.shortcuts import render_to_response, get_object_or_404
+from django.http import Http404
+from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.conf import settings
 from django.template.loader import get_template
-from django.template.base import Template
 
 from .utils import get_email_directories
 from .parse_util import recursive_block_replace
