@@ -33,6 +33,7 @@ def get_email_directories(dir):
 
 
 def send_templated_email(recipients, template_path, context=None,
+                    attachments=[],
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     fail_silently=False):
     """
@@ -43,11 +44,11 @@ def send_templated_email(recipients, template_path, context=None,
     recipient_pks = [r.pk for r in recipients if isinstance(r, get_user_model())]
     recipient_emails = [e for e in recipients if not isinstance(e, get_user_model())]
     send = _send_task.delay if use_celery else _send
-    send(recipient_pks, recipient_emails, template_path, context, from_email,
+    send(recipient_pks, recipient_emails, template_path, context, attachments, from_email,
          fail_silently)
 
 
-def _send(recipient_pks, recipient_emails, template_path, context, from_email,
+def _send(recipient_pks, recipient_emails, template_path, context, attachments, from_email,
           fail_silently):
     recipients = list(get_user_model().objects.filter(pk__in=recipient_pks))
     recipients += recipient_emails
@@ -99,6 +100,10 @@ def _send(recipient_pks, recipient_emails, template_path, context, from_email,
             msg.attach_alternative(body, "text/html")
         except TemplateDoesNotExist:
             logging.info("Email sent without HTML, since %s not found" % html_path)
+
+        # Attachments
+        for attachment in attachments:
+            msg.attach(attachment.filename, attachment.content, attachment.mimetype)
 
         msg.send(fail_silently=fail_silently)
 
