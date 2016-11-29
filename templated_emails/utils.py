@@ -32,10 +32,28 @@ def get_email_directories(dir):
     return directory_tree
 
 
+class EmailMultiAlternativesWithEncoding(EmailMultiAlternatives):
+
+    def _create_attachment(self, filename, content, mimetype=None):
+        from email.header import Header
+
+        attachment = super(
+            EmailMultiAlternativesWithEncoding, self
+        )._create_attachment(filename, content, mimetype)
+
+        if filename:
+            try:
+                filename = filename.encode('ascii')
+            except UnicodeEncodeError:
+                filename = Header(filename, 'utf-8').encode()
+            attachment.set_param('filename', filename, 'Content-Disposition')
+        return attachment
+
+
 def send_templated_email(recipients, template_path, context=None,
-                    attachments=[],
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    fail_silently=False):
+                         attachments=[],
+                         from_email=settings.DEFAULT_FROM_EMAIL,
+                         fail_silently=False):
     """
         recipients can be either a list of emails or a list of users,
         if it is users the system will change to the language that the
@@ -89,7 +107,7 @@ def _send(recipient_pks, recipient_emails, template_path, context, attachments, 
         subject = "".join(subject.splitlines())  # this must be a single line
         text = render_to_string(text_path, context)
 
-        msg = EmailMultiAlternatives(subject, text, from_email, [email])
+        msg = EmailMultiAlternativesWithEncoding(subject, text, from_email, [email])
 
         # try to attach the html variant
         try:
